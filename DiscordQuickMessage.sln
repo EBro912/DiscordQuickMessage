@@ -3,7 +3,11 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DiscordQuickMessage", "DiscordQuickMessage\DiscordQuickMessage.csproj", "{081EC0AE-1141-40B8-81E1-B6E8ECC65A37}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "DiscordQuickMessage", "DiscordQuickMessage\DiscordQuickMessage.csproj", "{081EC0AE-1141-40B8-81E1-B6E8ECC65A37}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "QuickMessage", "QuickMessage\QuickMessage.csproj", "{243FC453-0B4A-463B-A98F-84064076FB06}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{4AECC34B-95D4-47B6-92F4-F1E2783D159E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +19,14 @@ Global
 		{081EC0AE-1141-40B8-81E1-B6E8ECC65A37}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{081EC0AE-1141-40B8-81E1-B6E8ECC65A37}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{081EC0AE-1141-40B8-81E1-B6E8ECC65A37}.Release|Any CPU.Build.0 = Release|Any CPU
+		{243FC453-0B4A-463B-A98F-84064076FB06}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{243FC453-0B4A-463B-A98F-84064076FB06}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{243FC453-0B4A-463B-A98F-84064076FB06}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{243FC453-0B4A-463B-A98F-84064076FB06}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4AECC34B-95D4-47B6-92F4-F1E2783D159E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4AECC34B-95D4-47B6-92F4-F1E2783D159E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4AECC34B-95D4-47B6-92F4-F1E2783D159E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4AECC34B-95D4-47B6-92F4-F1E2783D159E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
