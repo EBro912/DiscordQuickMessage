@@ -4,13 +4,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-
-
 using OpenAI_API;
 using OpenAI_API.Completions;
 using OpenAI_API.Models;
-
-
 
 // for indexing purposes
 enum Response : int
@@ -81,7 +77,7 @@ namespace quickMessage
 
 
         // for openai stuff
-        //private static OpenAIAPI api = new OpenAIAPI(new APIAuthentication("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"));
+        //private static OpenAIAPI api = new OpenAIAPI(new APIAuthentication(api-key));
         //var r = await api.Completions.CreateAndFormatCompletion(new CompletionRequest("Tell me something sad", temperature: 0.5, model: Model.AdaText));
         //r.ToString());
 
