@@ -108,7 +108,7 @@ namespace DiscordQuickMessage
                             Console.WriteLine($"Failed to send a DM to user {user}\n{e}");
                         }
                     }
-                }             
+                }
             };
 
             // lambda function for when a button is clicked
@@ -139,6 +139,7 @@ namespace DiscordQuickMessage
                     "three" => "No",
                     _ => throw new Exception("Unknown button ID value")
                 };
+                await confirmation(data, x.User, response);
                 // build the response embed that gets sent back to the user
                 EmbedBuilder eb = new EmbedBuilder()
                 {
@@ -175,6 +176,32 @@ namespace DiscordQuickMessage
                 var commands = await interaction.RegisterCommandsGloballyAsync();
                 Console.WriteLine($"Registered {commands.Count} slash commands with Discord.");
                 registerSlashCommands = false;
+            }
+        }
+        public async Task confirmation(string[] data, Discord.WebSocket.SocketUser user, string response)
+        {
+            EmbedBuilder eb = new EmbedBuilder()
+            {
+                Title = "Are You Sure",
+                Description = $"you selected: {response}, are you sure about that?",
+                Color = Color.Orange
+            };
+            eb.AddField("1", "Yes", true);
+            eb.AddField("2", "No", true);
+
+            ComponentBuilder cb = new ComponentBuilder();
+            cb.WithButton(customId: $"one", style: ButtonStyle.Success, emote: oneEmoji);
+            cb.WithButton(customId: $"two", style: ButtonStyle.Secondary, emote: twoEmoji);
+
+            // attempt to send a DM to the user containing the embed and buttons
+            try
+            {
+                IDMChannel dm = await user.CreateDMChannelAsync();
+                await dm.SendMessageAsync(embed: eb.Build(), components: cb.Build());
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine($"Failed to send a DM to user {user}\n{e}");
             }
         }
 
