@@ -14,6 +14,12 @@ namespace DiscordQuickMessage
         // the original prompt
         public string Prompt { get; private set; }
 
+        // the original embed. this is uses if the user declines the confirmation and we have to resend the original
+        public EmbedBuilder Embed { get; private set; }
+
+        // a jump url to the original message. also used for re-building the embed after declining
+        public string JumpUrl { get; private set; }
+
         // the three possible responses
         // by default initialize them with the default values
         public string PositiveResponse { get; private set; } = DefaultYes;
@@ -21,16 +27,18 @@ namespace DiscordQuickMessage
         public string NegativeResponse { get; private set; } = DefaultNo;
 
         // since we cannot use await in constructors, use a create method
-        public static async Task<QuickMessage> CreateAsync(string prompt)
+        public static async Task<QuickMessage> CreateAsync(string prompt, EmbedBuilder embed, string jumpUrl)
         {
-            QuickMessage result = new QuickMessage(prompt);
+            QuickMessage result = new QuickMessage(prompt, embed, jumpUrl);
             await result.GenerateResponses();
             return result;
         }
 
-        private QuickMessage(string prompt)
+        private QuickMessage(string prompt, EmbedBuilder embed, string jumpUrl)
         {
             Prompt = prompt; 
+            Embed = embed;
+            JumpUrl = jumpUrl;
         }
 
         private async Task GenerateResponses()

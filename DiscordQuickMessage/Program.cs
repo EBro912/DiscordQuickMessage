@@ -42,8 +42,12 @@ namespace DiscordQuickMessage
         private readonly IEmote threeEmoji = Emoji.Parse(":three:");
 
         // a dictionary to store current active quick message responses
-        // the key is the embed the bot sends and the value is the corresponding information to be used later
+        // the key is the user id and the value is the corresponding information to be used later
         private Dictionary<ulong, QuickMessage> activeQuickMessages = new Dictionary<ulong, QuickMessage>();
+
+        // a dictionary to store current confirmations
+        // the key is the user id and the value is the response the user is confirming
+        private Dictionary<ulong, string> activeConfirmations = new Dictionary<ulong, string>();
 
         // the main function only calls the start function and waits for it to complete
         public static void Main(string[] args)
@@ -84,6 +88,8 @@ namespace DiscordQuickMessage
             {
                 // extract the data from the button's ID
                 string[] data = x.Data.CustomId.Split('_');
+
+
                 // get the channel of the original message
                 SocketTextChannel? channel = await client.GetChannelAsync(ulong.Parse(data[0])) as SocketTextChannel;
                 if (channel == null)
@@ -98,19 +104,68 @@ namespace DiscordQuickMessage
                     Console.WriteLine("Failed to get message on button click!");
                     return;
                 }
+                
                 // handle the responses depending on the button clicked
-                // TODO: add confirmation logic
-                if (!activeQuickMessages.TryGetValue(x.Message.Id, out QuickMessage quickMessage))
+                if (!activeQuickMessages.TryGetValue(x.User.Id, out QuickMessage quickMessage))
                 {
-                    Console.WriteLine("Failed to get QuickMessage from active quick messages for message ID: " + x.Message.Id);
+                    Console.WriteLine("Failed to get QuickMessage from active quick messages for User ID: " + x.Message.Id);
                     return;
                 }
 
-                // if the user ignores the ping, simply remove buttons and do nothing
+                // if the button is from a confirmation, use different logic
+                if (data[2] == "confirm")
+                {
+                    // if the user declines the confirmation, rebuild the original embed
+                    if (data[3] == "no")
+                    {
+                        EmbedBuilder en = quickMessage.Embed;
+                        // build the four buttons on the bottom of the message
+                        // store the channel ID and message ID in the button's ID for later logic
+                        ComponentBuilder cn = new ComponentBuilder();
+                        cn.WithButton(customId: $"{data[0]}_{data[1]}_one", style: ButtonStyle.Success, emote: oneEmoji);
+                        cn.WithButton(customId: $"{data[0]}_{data[1]}_two", style: ButtonStyle.Secondary, emote: twoEmoji);
+                        cn.WithButton(customId: $"{data[0]}_{data[1]}_three", style: ButtonStyle.Danger, emote: threeEmoji);
+                        cn.WithButton(customId: $"{data[0]}_{data[1]}_ignore", style: ButtonStyle.Danger, label: "Ignore");
+                        cn.WithButton(style: ButtonStyle.Link, label: "Original Message", url: quickMessage.JumpUrl);
+                        await x.Message.ModifyAsync(x =>
+                        {
+                            x.Embed = en.Build();
+                            x.Components = cn.Build();
+                        });
+                        activeConfirmations.Remove(x.User.Id);
+                        await x.DeferAsync();
+                        return;
+                    }
+
+                    if (!activeConfirmations.TryGetValue(x.User.Id, out string result))
+                    {
+                        Console.WriteLine("Failed to get response from active confirmation for User ID: " + x.Message.Id);
+                        return;
+                    }
+                    // build the response embed that gets sent back to the user
+                    EmbedBuilder eb = new EmbedBuilder()
+                    {
+                        Title = "Quick Response",
+                        Description = $"**{x.User}** responded with a quick response: {result}",
+                        Color = Color.Orange
+                    };
+                    // reply to the original message with the response embed
+                    await msg.ReplyAsync(embed: eb.Build());
+                    // remove the quick response from the active responses
+                    activeQuickMessages.Remove(x.Message.Id);
+                    activeConfirmations.Remove(x.User.Id);
+                    // let the user know that the message got sent
+                    await x.RespondAsync($"Response sent successfully: {result}");
+                    // delete the message to prevent further interaction
+                    await x.Message.DeleteAsync();
+                    return;
+                }
+
+                // if the user ignores the ping, simply remove message and do nothing
                 if (data[2] == "ignore")
                 {
-                    await x.Message.ModifyAsync(y => y.Components = new ComponentBuilder().Build());
-                    activeQuickMessages.Remove(x.Message.Id);
+                    await x.Message.DeleteAsync();
+                    activeQuickMessages.Remove(x.User.Id);
                     return;
                 }
 
@@ -122,23 +177,26 @@ namespace DiscordQuickMessage
                     _ => throw new ArgumentException("Unknown switch input: " + data[2])
                 };
 
-                // build the response embed that gets sent back to the user
-                EmbedBuilder eb = new EmbedBuilder()
+                // build confirmation embed
+                EmbedBuilder ec = new EmbedBuilder()
                 {
-                    Title = "Quick Response",
-                    Description = $"**{x.User}** responded with a quick response: {response}",
-                    Color = Color.Orange
+                    Title = "Response Confirmation:",
+                    Description = $"Are you sure you want to send the following response?\n\n{response}",
+                    Color = Color.Red
                 };
-                // reply to the original message with the response embed
-                await msg.ReplyAsync(embed: eb.Build());
-                // remove the quick response from the active responses
-                activeQuickMessages.Remove(x.Message.Id);
-                // let the user know that the message got sent
-                await x.RespondAsync($"Response sent successfully: {response}");
-                // remove the buttons when we are done to prevent further interaction
-                await x.Message.ModifyAsync(y => y.Components = new ComponentBuilder().Build());
 
+                // transmit the same data over to the confirmation buttons
+                ComponentBuilder cb = new ComponentBuilder();
+                cb.WithButton(customId: $"{data[0]}_{data[1]}_confirm_yes", style: ButtonStyle.Success, label: "Yes");
+                cb.WithButton(customId: $"{data[0]}_{data[1]}_confirm_no", style: ButtonStyle.Danger, label: "No");
 
+                await x.Message.ModifyAsync(x =>
+                {
+                    x.Embed = ec.Build();
+                    x.Components = cb.Build();
+                });
+                activeConfirmations.Add(x.User.Id, response);
+                await x.DeferAsync();
             };
 
             // reflection stuff that the library uses
@@ -157,9 +215,11 @@ namespace DiscordQuickMessage
                 Color = Color.Orange
             };
 
+            string jumpUrl = x.GetJumpUrl();
+
             // TODO: possibly ignore certain "invalid" messages
             // i.e. messages that are too long, arent a question, etc.
-            QuickMessage quickMessage = await QuickMessage.CreateAsync(x.CleanContent);
+            QuickMessage quickMessage = await QuickMessage.CreateAsync(x.CleanContent, eb, jumpUrl);
             // add three inline fields to the embed
             eb.AddField("1", quickMessage.PositiveResponse, true);
             eb.AddField("2", quickMessage.NeutralResponse, true);
@@ -172,7 +232,7 @@ namespace DiscordQuickMessage
             cb.WithButton(customId: $"{channel.Id}_{x.Id}_two", style: ButtonStyle.Secondary, emote: twoEmoji);
             cb.WithButton(customId: $"{channel.Id}_{x.Id}_three", style: ButtonStyle.Danger, emote: threeEmoji);
             cb.WithButton(customId: $"{channel.Id}_{x.Id}_ignore", style: ButtonStyle.Danger, label: "Ignore");
-            cb.WithButton(style: ButtonStyle.Link, label: "Original Message", url: x.GetJumpUrl());
+            cb.WithButton(style: ButtonStyle.Link, label: "Original Message", url: jumpUrl);
 
             // loop through each mentioned user in the message
             foreach (SocketUser user in x.MentionedUsers)
@@ -185,10 +245,10 @@ namespace DiscordQuickMessage
                 try
                 {
                     IDMChannel dm = await user.CreateDMChannelAsync();
-                    IUserMessage msg = await dm.SendMessageAsync(embed: eb.Build(), components: cb.Build());
+                    await dm.SendMessageAsync(embed: eb.Build(), components: cb.Build());
                     // currently, all of the users mentioned will share the same three prompts
                     // maybe TODO: change this so they are each unique?
-                    activeQuickMessages.Add(msg.Id, quickMessage);
+                    activeQuickMessages.Add(user.Id, quickMessage);
                 }
                 catch (Exception e)
                 {
