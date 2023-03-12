@@ -172,6 +172,7 @@ namespace DiscordQuickMessage
             cb.WithButton(customId: $"{channel.Id}_{x.Id}_two", style: ButtonStyle.Secondary, emote: twoEmoji);
             cb.WithButton(customId: $"{channel.Id}_{x.Id}_three", style: ButtonStyle.Danger, emote: threeEmoji);
             cb.WithButton(customId: $"{channel.Id}_{x.Id}_ignore", style: ButtonStyle.Danger, label: "Ignore");
+            cb.WithButton(style: ButtonStyle.Link, label: "Original Message", url: x.GetJumpUrl());
 
             // loop through each mentioned user in the message
             foreach (SocketUser user in x.MentionedUsers)
