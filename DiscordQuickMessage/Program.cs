@@ -14,6 +14,7 @@
  * Libraries Used:
  *  Discord.NET
  *  Microsoft.Extensions.DependencyInjection
+ *  OpenAI_API
  * 
  */
 
@@ -39,6 +40,10 @@ namespace DiscordQuickMessage
         private readonly IEmote oneEmoji = Emoji.Parse(":one:");
         private readonly IEmote twoEmoji = Emoji.Parse(":two:");
         private readonly IEmote threeEmoji = Emoji.Parse(":three:");
+
+        // a dictionary to store current active quick message responses
+        // the key is the embed the bot sends and the value is the corresponding information to be used later
+        private Dictionary<ulong, QuickMessage> activeQuickMessages = new Dictionary<ulong, QuickMessage>();
 
         // the main function only calls the start function and waits for it to complete
         public static void Main(string[] args)
@@ -67,47 +72,10 @@ namespace DiscordQuickMessage
                 // - The message is sent in a server text channel
                 // - If the message mentions at least one user
                 // - The message author is not a bot
-                if (x.Channel is SocketTextChannel channel && x.MentionedUsers.Count > 0 && !x.Author.IsBot)
+                // - The message content is greater than 0
+                if (x.Channel is SocketTextChannel channel && x.MentionedUsers.Count > 0 && !x.Author.IsBot && x.Content.Length > 0)
                 {
-                    // build the embed that gets sent to each mentioned user
-                    EmbedBuilder eb = new EmbedBuilder()
-                    {
-                        Title = "You Were Mentioned",
-                        Description = $"You were mentioned by {x.Author} in {channel.Guild.Name}\n__**Content:**__\n{x.Content}\n__**Responses:**__",
-                        Color = Color.Orange
-                    };
-                    // add three inline fields to the embed
-                    // TODO: make these not placeholders
-                    eb.AddField("1", "Yes", true);
-                    eb.AddField("2", "Maybe", true);
-                    eb.AddField("3", "No", true);
-
-                    // build the three buttons on the bottom of the message
-                    // store the channel ID and message ID in the button's ID for later logic
-                    // TODO: make these functional
-                    ComponentBuilder cb = new ComponentBuilder();
-                    cb.WithButton(customId: $"{channel.Id}_{x.Id}_one", style: ButtonStyle.Success, emote: oneEmoji);
-                    cb.WithButton(customId: $"{channel.Id}_{x.Id}_two", style: ButtonStyle.Secondary, emote: twoEmoji);
-                    cb.WithButton(customId: $"{channel.Id}_{x.Id}_three", style: ButtonStyle.Danger, emote: threeEmoji);
-
-                    // loop through each mentioned user in the message
-                    foreach (SocketUser user in x.MentionedUsers)
-                    {
-                        // if the mentioned user is not a human, ignore them
-                        // TODO: ignore the user that sent the message as well, currently only allowed for testing purposes
-                        if (user.IsBot || user.IsWebhook) continue;
-
-                        // attempt to send a DM to the user containing the embed and buttons
-                        try
-                        {
-                            IDMChannel dm = await user.CreateDMChannelAsync();
-                            await dm.SendMessageAsync(embed: eb.Build(), components: cb.Build());
-                        }
-                        catch (Exception e)
-                        {
-                            Console.WriteLine($"Failed to send a DM to user {user}\n{e}");
-                        }
-                    }
+                    _ = Task.Run(() => HandleSendResponses(x));
                 }             
             };
 
@@ -131,14 +99,29 @@ namespace DiscordQuickMessage
                     return;
                 }
                 // handle the responses depending on the button clicked
-                // this logic is temporary
+                // TODO: add confirmation logic
+                if (!activeQuickMessages.TryGetValue(x.Message.Id, out QuickMessage quickMessage))
+                {
+                    Console.WriteLine("Failed to get QuickMessage from active quick messages for message ID: " + x.Message.Id);
+                    return;
+                }
+
+                // if the user ignores the ping, simply remove buttons and do nothing
+                if (data[2] == "ignore")
+                {
+                    await x.Message.ModifyAsync(y => y.Components = new ComponentBuilder().Build());
+                    activeQuickMessages.Remove(x.Message.Id);
+                    return;
+                }
+
                 string response = data[2] switch
                 {
-                    "one" => "Yes",
-                    "two" => "Maybe",
-                    "three" => "No",
-                    _ => throw new Exception("Unknown button ID value")
+                    "one" => quickMessage.PositiveResponse,
+                    "two" => quickMessage.NeutralResponse,
+                    "three" => quickMessage.NegativeResponse,
+                    _ => throw new ArgumentException("Unknown switch input: " + data[2])
                 };
+
                 // build the response embed that gets sent back to the user
                 EmbedBuilder eb = new EmbedBuilder()
                 {
@@ -148,15 +131,69 @@ namespace DiscordQuickMessage
                 };
                 // reply to the original message with the response embed
                 await msg.ReplyAsync(embed: eb.Build());
+                // remove the quick response from the active responses
+                activeQuickMessages.Remove(x.Message.Id);
                 // let the user know that the message got sent
                 await x.RespondAsync($"Response sent successfully: {response}");
                 // remove the buttons when we are done to prevent further interaction
                 await x.Message.ModifyAsync(y => y.Components = new ComponentBuilder().Build());
+
+
             };
 
             // reflection stuff that the library uses
             interaction = new InteractionService(client);
             await interaction.AddModulesAsync(Assembly.GetEntryAssembly(), services);
+        }
+
+        private async Task HandleSendResponses(SocketMessage x)
+        {
+            SocketTextChannel channel = (SocketTextChannel)x.Channel;
+            // build the embed that gets sent to each mentioned user
+            EmbedBuilder eb = new EmbedBuilder()
+            {
+                Title = "You Were Mentioned",
+                Description = $"You were mentioned by {x.Author} in {channel.Guild.Name}\n__**Content:**__\n{x.Content}\n__**Responses:**__",
+                Color = Color.Orange
+            };
+
+            // TODO: possibly ignore certain "invalid" messages
+            // i.e. messages that are too long, arent a question, etc.
+            QuickMessage quickMessage = await QuickMessage.CreateAsync(x.CleanContent);
+            // add three inline fields to the embed
+            eb.AddField("1", quickMessage.PositiveResponse, true);
+            eb.AddField("2", quickMessage.NeutralResponse, true);
+            eb.AddField("3", quickMessage.NegativeResponse, true);
+
+            // build the four buttons on the bottom of the message
+            // store the channel ID and message ID in the button's ID for later logic
+            ComponentBuilder cb = new ComponentBuilder();
+            cb.WithButton(customId: $"{channel.Id}_{x.Id}_one", style: ButtonStyle.Success, emote: oneEmoji);
+            cb.WithButton(customId: $"{channel.Id}_{x.Id}_two", style: ButtonStyle.Secondary, emote: twoEmoji);
+            cb.WithButton(customId: $"{channel.Id}_{x.Id}_three", style: ButtonStyle.Danger, emote: threeEmoji);
+            cb.WithButton(customId: $"{channel.Id}_{x.Id}_ignore", style: ButtonStyle.Danger, label: "Ignore");
+
+            // loop through each mentioned user in the message
+            foreach (SocketUser user in x.MentionedUsers)
+            {
+                // if the mentioned user is not a human, ignore them
+                // TODO: ignore the user that sent the message as well, currently only allowed for testing purposes
+                if (user.IsBot || user.IsWebhook) continue;
+
+                // attempt to send a DM to the user containing the embed and buttons
+                try
+                {
+                    IDMChannel dm = await user.CreateDMChannelAsync();
+                    IUserMessage msg = await dm.SendMessageAsync(embed: eb.Build(), components: cb.Build());
+                    // currently, all of the users mentioned will share the same three prompts
+                    // maybe TODO: change this so they are each unique?
+                    activeQuickMessages.Add(msg.Id, quickMessage);
+                }
+                catch (Exception e)
+                {
+                    Console.WriteLine($"Failed to send a DM to user {user}\n{e}");
+                }
+            }
         }
 
         private Task Log(LogMessage msg)
@@ -188,6 +225,9 @@ namespace DiscordQuickMessage
                 Console.ReadLine();
                 return;
             }
+
+            // initialize the OpenAIHandler
+            OpenAIHandler.Init();
 
             // setting up the client
             client = new DiscordSocketClient(new DiscordSocketConfig()
