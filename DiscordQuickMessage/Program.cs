@@ -279,8 +279,10 @@ namespace DiscordQuickMessage
         public async Task Start(string[] args)
         {
             Console.OutputEncoding = Encoding.UTF8;
+            Console.WriteLine(Directory.GetCurrentDirectory());
+            string filename = "../../../token.txt";
 
-            if (!File.Exists("token.txt"))
+            if (!File.Exists(filename))
             {
                 Console.WriteLine("You are missing a token.txt! The bot will not run without this!");
                 Console.ReadLine();
@@ -312,7 +314,7 @@ namespace DiscordQuickMessage
 
             // read the bot's token from the file
             // tokens are meant to be kept private, since anyone with the token can log in as the bot
-            string token = File.ReadAllText("token.txt");
+            string token = File.ReadAllText(filename);
 
             // hook bot events
             await RegisterEvents();
