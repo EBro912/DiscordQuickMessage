@@ -10,11 +10,12 @@ namespace DiscordQuickMessage
 
         public static void Init()
         {
-            if (!File.Exists("openai_token.txt"))
+            string filename = "../../../openai_token.txt";
+            if (!File.Exists(filename))
             {
                 throw new FileNotFoundException("Could not find openai_token.txt in the current directory.");
             }
-            string token = File.ReadAllText("openai_token.txt");
+            string token = File.ReadAllText(filename);
             openAI = new OpenAIAPI(token);
             Console.WriteLine("[OpenAIHandler]: OpenAIHandler initalized successfully.");
         }
