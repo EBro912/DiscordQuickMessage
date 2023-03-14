@@ -22,11 +22,15 @@ MSTest.TestFramework >= 2.2.7
 
 coverlet.collector >= 3.1.0
 
+You will also need to create a bot on the Discord Developer page as well as create a profile on OpenAI's website to acquire an API token from each. This is necessary for later steps.
+
 # How to Run
 1. Clone the respository and open the .sln file in Visual Studio 2022.
 2. Under Test > Test Explorer, click the dropdown on the settings cog and check off "Run Tests After Build" to auto run unit tests.
-3. Press F5 or Alt+F5 to run the bot.
-4. A console window will appear. After the message "Ready" is logged, the bot is ready to be interacted with.
+3. Press F6 to build the project. This will generate necessary folders for the next step.
+4. Create files named token.txt and openai_token.txt in the run directory (..\DiscordQuickMessage\bin\Debug\net6.0) of the project, and paste in your Discord bot token and OpenAI token, respectively.
+5. Press F5 or Alt+F5 to run the bot.
+6. A console window will appear. After the message "Ready" is logged, the bot is ready to be interacted with.
 
 # How to Use
 1. When you are mentioned by another user in a channel, the bot will send you a Direct Message on Discord.
