@@ -26,22 +26,14 @@ namespace DiscordQuickMessage
         public string NeutralResponse { get; private set; } = DefaultMaybe;
         public string NegativeResponse { get; private set; } = DefaultNo;
 
-        // since we cannot use await in constructors, use a create method
-        public static async Task<QuickMessage> CreateAsync(string prompt, EmbedBuilder embed, string jumpUrl)
-        {
-            QuickMessage result = new QuickMessage(prompt, embed, jumpUrl);
-            await result.GenerateResponses();
-            return result;
-        }
-
-        private QuickMessage(string prompt, EmbedBuilder embed, string jumpUrl)
+        public QuickMessage(string prompt, EmbedBuilder embed, string jumpUrl)
         {
             Prompt = prompt; 
             Embed = embed;
             JumpUrl = jumpUrl;
         }
 
-        private async Task GenerateResponses()
+        public async Task GenerateResponses()
         {
             // if any of the responses fail, then the default responses will automatically be the fallback
             try

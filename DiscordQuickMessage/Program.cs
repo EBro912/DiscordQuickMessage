@@ -181,7 +181,7 @@ namespace DiscordQuickMessage
                 EmbedBuilder ec = new EmbedBuilder()
                 {
                     Title = "Response Confirmation:",
-                    Description = $"Are you sure you want to send the following response?\n\n{response}",
+                    Description = $"Are you sure you want to send the following response?\n{response}",
                     Color = Color.Red
                 };
 
@@ -219,7 +219,8 @@ namespace DiscordQuickMessage
 
             // TODO: possibly ignore certain "invalid" messages
             // i.e. messages that are too long, arent a question, etc.
-            QuickMessage quickMessage = await QuickMessage.CreateAsync(x.CleanContent, eb, jumpUrl);
+            QuickMessage quickMessage = new QuickMessage(x.CleanContent, eb, jumpUrl);
+            await quickMessage.GenerateResponses();
             // add three inline fields to the embed
             eb.AddField("1", quickMessage.PositiveResponse, true);
             eb.AddField("2", quickMessage.NeutralResponse, true);
