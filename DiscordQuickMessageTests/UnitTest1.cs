@@ -10,7 +10,7 @@ namespace DiscordQuickMessageTests
         [TestMethod]
         public void Stores_Prompt_Correctly()
         {
-            QuickMessage q = new QuickMessage("Test prompt", new EmbedBuilder(), "url");
+            QuickMessage q = new QuickMessage("Test prompt", new EmbedBuilder(), "url", 0);
 
             string expect = "Test prompt";
 
@@ -26,7 +26,7 @@ namespace DiscordQuickMessageTests
                 Description = "Description"
             };
 
-            QuickMessage q = new QuickMessage("Test prompt", eb, "url");
+            QuickMessage q = new QuickMessage("Test prompt", eb, "url", 0);
 
             string expectTitle = "Title";
             string expectDescription = "Description";
@@ -38,7 +38,7 @@ namespace DiscordQuickMessageTests
         [TestMethod]
         public void Stores_JumpUrl_Correctly()
         {
-            QuickMessage q = new QuickMessage("Test prompt", new EmbedBuilder(), "url");
+            QuickMessage q = new QuickMessage("Test prompt", new EmbedBuilder(), "url", 0);
 
             string expect = "url";
 
@@ -48,7 +48,7 @@ namespace DiscordQuickMessageTests
         [TestMethod]
         public void Stores_Default_Positive_Correctly()
         {
-            QuickMessage q = new QuickMessage("Test prompt", new EmbedBuilder(), "url");
+            QuickMessage q = new QuickMessage("Test prompt", new EmbedBuilder(), "url", 0);
 
             string expect = "Yes";
 
@@ -58,7 +58,7 @@ namespace DiscordQuickMessageTests
         [TestMethod]
         public void Stores_Default_Neutral_Correctly()
         {
-            QuickMessage q = new QuickMessage("Test prompt", new EmbedBuilder(), "url");
+            QuickMessage q = new QuickMessage("Test prompt", new EmbedBuilder(), "url", 0);
 
             string expect = "Maybe";
 
@@ -68,11 +68,21 @@ namespace DiscordQuickMessageTests
         [TestMethod]
         public void Stores_Default_Negative_Correctly()
         {
-            QuickMessage q = new QuickMessage("Test prompt", new EmbedBuilder(), "url");
+            QuickMessage q = new QuickMessage("Test prompt", new EmbedBuilder(), "url", 0);
 
             string expect = "No";
 
             Assert.AreEqual(q.NegativeResponse, expect);
+        }
+
+        [TestMethod]
+        public void Stores_Message_Id_Correctly()
+        {
+            QuickMessage q = new QuickMessage("Test prompt", new EmbedBuilder(), "url", 1234567);
+
+            int expect = 1234567;
+
+            Assert.AreEqual(q.MessageId, expect);
         }
     }
 }
