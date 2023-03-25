@@ -96,7 +96,18 @@ namespace DiscordQuickMessage
                 SocketUserMessage? msg = await channel.GetMessageAsync(ulong.Parse(data[1])) as SocketUserMessage;
                 if (msg == null)
                 {
-                    Console.WriteLine("Failed to get message on button click!");
+                    // if we cant get the original message, assume it was deleted or we can no longer access it
+                    EmbedBuilder eb = new EmbedBuilder()
+                    {
+                        Title = "Original Message Deleted",
+                        Description = "Failed to retrieve the original message. It may have been deleted by the user who sent it.",
+                        Color = Color.Red
+                    };
+                    await x.Message.ModifyAsync(x =>
+                    {
+                        x.Embed = eb.Build();
+                        x.Components = new ComponentBuilder().Build();
+                    });
                     return;
                 }
                 
@@ -234,6 +245,9 @@ namespace DiscordQuickMessage
                 // if the mentioned user is not a human, ignore them
                 // TODO: ignore the user that sent the message as well, currently only allowed for testing purposes
                 if (user.IsBot || user.IsWebhook) continue;
+
+                // if the user has do not disturb mode on, ignore them
+                if (QuickMessageHandler.IsUserDoNotDisturb(user.Id)) continue;
 
                 // attempt to send a DM to the user containing the embed and buttons
                 try

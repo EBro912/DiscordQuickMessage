@@ -8,6 +8,9 @@ namespace DiscordQuickMessage
         // the key is the user id and the value is the quick responses the user can interact with
         private static Dictionary<ulong, List<QuickMessage>> activeQuickMessages = new Dictionary<ulong, List<QuickMessage>>();
 
+        // users who are currently in do not disturb mode
+        private static HashSet<ulong> doNotDisturbUsers = new HashSet<ulong>();
+
         // helper function to get a quickmessage from a user's list of quickmesssages
         public static bool GetQuickMessageByMessageId(ulong userId, ulong messageId, [MaybeNullWhen(false)] out QuickMessage quickMessage)
         {
@@ -47,6 +50,25 @@ namespace DiscordQuickMessage
                     activeQuickMessages.Remove(userId);
                 }
             }
+        }
+
+        // toggles do not disturb mode for a user
+        // returns if the user turned it on or off
+        public static bool ToggleDoNotDisturb(ulong user)
+        {
+            if (doNotDisturbUsers.Contains(user))
+            {
+                doNotDisturbUsers.Remove(user);
+                return false;
+            }
+            doNotDisturbUsers.Add(user);
+            return true;
+        }
+
+        // checks if a user has do not disturb mode on
+        public static bool IsUserDoNotDisturb(ulong user)
+        {
+            return doNotDisturbUsers.Contains(user);
         }
 
 
