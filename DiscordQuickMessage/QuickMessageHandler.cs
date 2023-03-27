@@ -1,4 +1,5 @@
-﻿using System.Diagnostics.CodeAnalysis;
+﻿using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 
 namespace DiscordQuickMessage
 {
@@ -10,6 +11,30 @@ namespace DiscordQuickMessage
 
         // users who are currently in do not disturb mode
         private static HashSet<ulong> doNotDisturbUsers = new HashSet<ulong>();
+
+        // a list of active cooldowns
+        private static ConcurrentDictionary<ulong, List<Cooldown>> activeCooldowns = new ConcurrentDictionary<ulong, List<Cooldown>>();
+
+        // counts down every second for each cooldown
+        public static async Task TickCooldowns()
+        {
+            Console.WriteLine("[QuickMessageHandler]: TickCooldowns now running");
+            while (true)
+            {
+                foreach (KeyValuePair<ulong, List<Cooldown>> entry in activeCooldowns)
+                {
+                    foreach (Cooldown cooldown in entry.Value)
+                    {
+                        cooldown.SecondsLeft--;
+                        if (cooldown.SecondsLeft <= 0)
+                        {
+                            entry.Value.Remove(cooldown);
+                        }
+                    }
+                }
+                await Task.Delay(1000);
+            }
+        }
 
         // helper function to get a quickmessage from a user's list of quickmesssages
         public static bool GetQuickMessageByMessageId(ulong userId, ulong messageId, [MaybeNullWhen(false)] out QuickMessage quickMessage)
@@ -71,6 +96,31 @@ namespace DiscordQuickMessage
             return doNotDisturbUsers.Contains(user);
         }
 
+        // applies a cooldown to a user and the user that mentioned them
+        // default is 15 seconds
+        public static void ApplyCooldown(ulong user, ulong mentioner, int seconds = 15)
+        {
+            if (activeCooldowns.ContainsKey(user))
+            {
+                activeCooldowns[user].Add(new Cooldown(mentioner, seconds));
+            }
+            else
+            {
+                if (!activeCooldowns.TryAdd(user, new List<Cooldown> { new Cooldown(mentioner, seconds) }))
+                {
+                    Console.WriteLine($"Failed to add user {user} to activeCooldowns.");
+                }
+            }
+        }
+
+        // checks if a user and a mentioner have an active cooldown
+        public static bool HasCooldown(ulong user, ulong mentioner)
+        {
+            if (!activeCooldowns.ContainsKey(user))
+                return false;
+
+            return activeCooldowns[user].FirstOrDefault(x => x.User == mentioner) != null;
+        }
 
     }
 }

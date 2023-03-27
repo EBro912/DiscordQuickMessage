@@ -25,7 +25,6 @@ using System.Reflection;
 using Discord.Interactions;
 using System.Text;
 using Microsoft.Extensions.DependencyInjection;
-using System.Diagnostics.CodeAnalysis;
 
 namespace DiscordQuickMessage
 {
@@ -249,6 +248,9 @@ namespace DiscordQuickMessage
                 // if the user has do not disturb mode on, ignore them
                 if (QuickMessageHandler.IsUserDoNotDisturb(user.Id)) continue;
 
+                // if the user is on a cooldown, ignore them
+                if (QuickMessageHandler.HasCooldown(user.Id, x.Author.Id)) continue;
+
                 // attempt to send a DM to the user containing the embed and buttons
                 try
                 {
@@ -257,6 +259,7 @@ namespace DiscordQuickMessage
                     // currently, all of the users mentioned will share the same three prompts
                     // maybe TODO: change this so they are each unique?
                     QuickMessageHandler.AddQuickMessage(user.Id, quickMessage);
+                    QuickMessageHandler.ApplyCooldown(user.Id, x.Author.Id);
                 }
                 catch (Exception e)
                 {
@@ -331,6 +334,8 @@ namespace DiscordQuickMessage
             {
                 registerSlashCommands = true;
             }
+
+            _ = Task.Run(() => QuickMessageHandler.TickCooldowns());
 
             // log in to Discord as the bot and start communicating with the API
             await client.LoginAsync(TokenType.Bot, token);
