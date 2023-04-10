@@ -84,5 +84,68 @@ namespace DiscordQuickMessageTests
 
             Assert.AreEqual(q.MessageId, expect);
         }
+
+        [TestMethod]
+        public void Stores_Cooldown_User_Correctly()
+        {
+            Cooldown c = new Cooldown(1234567, 0);
+
+            int expect = 1234567;
+
+            Assert.AreEqual(c.User, expect);
+        }
+
+        [TestMethod]
+        public void Stores_Cooldown_Time_Correctly()
+        {
+            Cooldown c = new Cooldown(0, 15);
+
+            int expect = 15;
+
+            Assert.AreEqual(c.SecondsLeft, expect);
+        }
+
+        [TestMethod]
+        public void Is_DoNotDisturb_Non_Existing_User()
+        {
+            bool result = QuickMessageHandler.IsUserDoNotDisturb(0);
+
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void Is_DoNotDisturb_Existing_User()
+        {
+            QuickMessageHandler.ToggleDoNotDisturb(0);
+            bool result = QuickMessageHandler.IsUserDoNotDisturb(0);
+
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void Is_DoNotDisturb_Existing_User_Toggle_Off()
+        {
+            QuickMessageHandler.ToggleDoNotDisturb(0);
+            bool result = QuickMessageHandler.IsUserDoNotDisturb(0);
+
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void Cooldown_Non_Existing_User()
+        {
+            bool result = QuickMessageHandler.HasCooldown(0, 1);
+
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void Cooldown_Existing_User()
+        {
+            QuickMessageHandler.ApplyCooldown(0, 1, 5);
+            bool result = QuickMessageHandler.HasCooldown(0, 1);
+
+            Assert.IsTrue(result);
+        }
     }
 }
