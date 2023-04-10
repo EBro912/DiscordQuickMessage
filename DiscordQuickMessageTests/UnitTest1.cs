@@ -147,5 +147,62 @@ namespace DiscordQuickMessageTests
 
             Assert.IsTrue(result);
         }
+
+        [TestMethod]
+        public void Empty_QuickMessage_List()
+        {
+            bool result = QuickMessageHandler.GetQuickMessageByMessageId(0, 1, out _);
+
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void Add_QuickMessage()
+        {
+            QuickMessageHandler.AddQuickMessage(0, new QuickMessage("test", new EmbedBuilder(), string.Empty, 1));
+            bool result = QuickMessageHandler.GetQuickMessageByMessageId(0, 1, out _);
+
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void Stores_QuickMessage_Correctly()
+        {
+            QuickMessageHandler.GetQuickMessageByMessageId(0, 1, out QuickMessage q);
+
+            string expected = "test";
+
+            Assert.AreEqual(expected, q.Prompt);
+        }
+
+        [TestMethod]
+        public void Add_Multiple_QuickMessages()
+        {
+            QuickMessageHandler.AddQuickMessage(0, new QuickMessage(string.Empty, new EmbedBuilder(), string.Empty, 2));
+            bool result = QuickMessageHandler.GetQuickMessageByMessageId(0, 2, out QuickMessage q);
+
+            Assert.IsTrue(result);
+        }
+
+        [TestMethod]
+        public void Remove_QuickMessage()
+        {
+            QuickMessageHandler.GetQuickMessageByMessageId(0, 1, out QuickMessage q);
+            QuickMessageHandler.RemoveQuickMessage(0, q);
+            bool result = QuickMessageHandler.GetQuickMessageByMessageId(0, 1, out _);
+
+            Assert.IsFalse(result);
+        }
+
+        [TestMethod]
+        public void Remove_Second_QuickMessage()
+        {
+            QuickMessageHandler.GetQuickMessageByMessageId(0, 2, out QuickMessage q);
+            QuickMessageHandler.RemoveQuickMessage(0, q);
+            bool result = QuickMessageHandler.GetQuickMessageByMessageId(0, 2, out _);
+
+            Assert.IsFalse(result);
+        }
+
     }
 }
