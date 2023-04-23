@@ -1,4 +1,5 @@
-﻿using Discord.Interactions;
+﻿using Discord;
+using Discord.Interactions;
 
 namespace DiscordQuickMessage
 {
@@ -24,6 +25,36 @@ namespace DiscordQuickMessage
         public async Task Echo([Summary("text", "The text to repeat")]string text)
         {
             await RespondAsync(text);
+        }
+
+        // Dev command to clean out DMs
+        [SlashCommand("purgedms", "Deletes all previous messages from your dms")]
+        public async Task Purge()
+        {
+            IDMChannel channel = await Context.User.CreateDMChannelAsync();
+            var messages = await channel.GetMessagesAsync().FlattenAsync();
+            messages = messages.Where(x => x.Author.Id == Context.Client.CurrentUser.Id);
+            int count = messages.Count();
+            foreach (var message in messages)
+            {
+                await message.DeleteAsync();
+            }
+            await RespondAsync($"Purged {count} messages.", ephemeral: true);
+        }
+
+        [SlashCommand("dnd", "Toggles Do Not Disturb mode")]
+        public async Task DoNotDisturb()
+        {
+            // ephemeral sends the message privately to the person who ran the command
+
+            if (QuickMessageHandler.ToggleDoNotDisturb(Context.User.Id))
+            {
+                await RespondAsync("You have **enabled** Do Not Disturb mode.\n__You will not receive QuickMessage message when mentioned.__", ephemeral: true);
+            }
+            else
+            {
+                await RespondAsync("You have **disabled** Do Not Disturb mode.\n__You will now receive QuickMessage message when mentioned.__", ephemeral: true);
+            }
         }
     }
 }
