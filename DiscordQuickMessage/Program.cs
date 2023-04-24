@@ -242,8 +242,8 @@ namespace DiscordQuickMessage
             foreach (SocketUser user in x.MentionedUsers)
             {
                 // if the mentioned user is not a human, ignore them
-                // TODO: ignore the user that sent the message as well, currently only allowed for testing purposes
-                if (user.IsBot || user.IsWebhook) continue;
+                // also prevent users from mentioning themselves
+                if (user.IsBot || user.IsWebhook || user.Id == x.Author.Id) continue;
 
                 // if the user has do not disturb mode on, ignore them
                 if (QuickMessageHandler.IsUserDoNotDisturb(user.Id)) continue;
